@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precise Age Calculator (AD) - Professional Edition</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font family -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --primary-color: #4C51BF; /* Indigo 600 */
+            --primary-hover: #434190; /* Indigo 700 */
+            --bg-dark: #1F2937; /* Gray 800 */
+            --bg-card: #374151; /* Gray 700 */
+            --text-light: #F9FAFB;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 64px; /* Space for sticky header */
+        }
+        .calculator-card {
+            box-shadow: 0 0 40px -10px rgba(0, 0, 0, 0.5);
+        }
+        .input-field {
+            transition: all 0.3s ease;
+            outline: none;
+            border: 2px solid transparent;
+        }
+        .input-field:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.5);
+        }
+        .error-border {
+            border-color: #EF4444 !important; /* Red 500 */
+        }
+        .calculate-button {
+            transition: transform 0.1s, box-shadow 0.1s, background-color 0.3s;
+        }
+        .calculate-button:hover {
+            background-color: var(--primary-hover);
+        }
+        .calculate-button:active {
+            transform: scale(0.98);
+        }
+        /* Custom animation for results display */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .result-item {
+            animation: slideInUp 0.3s ease-out forwards;
+        }
+        /* Style for the modal (hidden by default) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+        }
+        /* Style for the sticky header */
+        .sticky-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            height: 64px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 dark">
+    
+    <!-- UPDATED: STICKY HEADER / NAVIGATION BAR -->
+    <header class="sticky-header bg-gray-800 shadow-xl dark:bg-gray-800/90 backdrop-blur-sm transition duration-300">
+        <nav class="max-w-7xl mx-auto h-full flex items-center justify-between px-4 sm:px-6 lg:px-8">
+            <!-- Logo / Site Title -->
+            <a href="#" class="text-xl font-extrabold text-indigo-400 tracking-wider transition hover:text-indigo-300 flex-shrink-0" onclick="scrollToTop(event)" aria-label="Go to top of page">
+                Age Calculator AD
+            </a>
+
+            <!-- Navigation Links -->
+            <!-- Using space-x-2 and flex-shrink-0 for mobile responsiveness -->
+            <div class="flex items-center space-x-2 overflow-x-auto whitespace-nowrap py-1"> 
+                <!-- Primary Links -->
+                <button 
+                    onclick="scrollToTop(event)" 
+                    class="text-text-light dark:text-gray-200 font-medium px-3 py-2 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition text-sm sm:text-base">
+                    Home
+                </button>
+                <button 
+                    onclick="scrollToFeatures(event)" 
+                    class="text-text-light dark:text-gray-200 font-medium px-3 py-2 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition text-sm sm:text-base">
+                    Features
+                </button>
+
+                <!-- NEW GENERIC CONTACT BUTTON: Opens the new Contact Us Modal -->
+                <button onclick="openModal('Contact Us')" 
+                    class="text-text-light dark:text-gray-200 font-medium px-3 py-2 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition text-sm sm:text-base flex-shrink-0">
+                    Contact
+                </button>
+
+                <!-- Legal Links - Smaller Text for compactness on the header -->
+                <button onclick="openModal('Disclaimer')" 
+                    class="text-xs text-gray-400 font-normal px-2 py-1 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition sm:text-sm">
+                    Disclaimer
+                </button>
+                <button onclick="openModal('Privacy Policy')" 
+                    class="text-xs text-gray-400 font-normal px-2 py-1 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition sm:text-sm">
+                    Privacy
+                </button>
+                <button onclick="openModal('Terms & Conditions')" 
+                    class="text-xs text-gray-400 font-normal px-2 py-1 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition sm:text-sm">
+                    Terms
+                </button>
+                <button onclick="openModal('Accessibility Statement')" 
+                    class="text-xs text-gray-400 font-normal px-2 py-1 rounded-lg hover:bg-gray-700 hover:text-indigo-400 transition sm:text-sm">
+                    Accessibility
+                </button>
+            </div>
+        </nav>
+    </header>
+
+
+    <!-- Main Content Wrapper -->
+    <main class="flex-grow flex items-center justify-center w-full p-4 mt-4">
+        <!-- Calculator Card -->
+        <div id="calculator-card" class="calculator-card w-full max-w-2xl bg-white dark:bg-gray-700 p-8 md:p-10 rounded-xl">
+
+            <!-- Title Section -->
+            <header class="mb-6">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 dark:text-text-light text-center">Precise Age Calculator (AD)</h1>
+                <p class="text-center text-gray-500 dark:text-gray-400 mt-1">Calculate your age down to the hour and minute.</p>
+            </header>
+            
+            <!-- Today's Date Display -->
+            <div id="todayDateDisplay" class="mb-8 p-3 bg-indigo-50 dark:bg-gray-800 rounded-lg text-center shadow-inner">
+                <p class="text-sm font-semibold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-1">Current System Date & Time (Gregorian)</p>
+                <p id="todayDateTime" class="text-xl font-bold text-gray-800 dark:text-text-light">Loading...</p>
+            </div>
+
+            <!-- Input Form -->
+            <form id="ageForm" aria-live="assertive">
+                
+                <!-- Date Inputs (Day, Month, Year) -->
+                <fieldset class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-600" aria-label="Birth Date Inputs">
+                    <legend class="text-lg font-semibold text-gray-800 dark:text-text-light mb-4">Birth Date (AD)</legend>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        
+                        <!-- Day Input -->
+                        <div class="flex-1">
+                            <label for="day" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">Day (AD)</label>
+                            <input type="number" id="day" name="day" placeholder="DD" min="1" max="31" required
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none"
+                                aria-required="true" aria-describedby="dayError">
+                            <p id="dayError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+
+                        <!-- Month Input -->
+                        <div class="flex-1">
+                            <label for="month" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">Month (AD)</label>
+                            <input type="number" id="month" name="month" placeholder="MM" min="1" max="12" required
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none"
+                                aria-required="true" aria-describedby="monthError">
+                            <p id="monthError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+
+                        <!-- Year Input -->
+                        <div class="flex-1">
+                            <label for="year" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">Year (AD)</label>
+                            <input type="number" id="year" name="year" placeholder="YYYY (e.g., 1990)" required
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none"
+                                aria-required="true" aria-describedby="yearError">
+                            <p id="yearError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <!-- Time Inputs (Hour, Minute, AMPM) -->
+                <fieldset class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-600" aria-label="Birth Time Inputs">
+                    <legend class="text-lg font-semibold text-gray-800 dark:text-text-light mb-4">Birth Time (Optional)</legend>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        
+                        <!-- Hour Input (1-12) -->
+                        <div class="flex-1">
+                            <label for="hour" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">Hour (12h)</label>
+                            <input type="number" id="hour" name="hour" placeholder="HH (1-12)" min="1" max="12" value="12"
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none"
+                                aria-required="false" aria-describedby="hourError">
+                            <p id="hourError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+                        
+                        <!-- Minute Input -->
+                        <div class="flex-1">
+                            <label for="minute" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">Minute</label>
+                            <input type="number" id="minute" name="minute" placeholder="MM (0-59)" min="0" max="59" value="00"
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none"
+                                aria-required="false" aria-describedby="minuteError">
+                            <p id="minuteError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+
+                        <!-- AM/PM Selector -->
+                        <div class="flex-1">
+                            <label for="ampm" class="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-gray-400 mb-1">AM/PM</label>
+                            <select id="ampm" name="ampm"
+                                class="input-field w-full p-3 text-lg font-bold text-gray-800 dark:text-text-light bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg appearance-none cursor-pointer">
+                                <option value="AM">AM</option>
+                                <option value="PM" selected>PM</option>
+                            </select>
+                            <p id="ampmError" class="text-red-500 text-sm mt-1 h-5" role="alert"></p>
+                        </div>
+                        
+                        <!-- Empty div for responsive layout balance -->
+                        <div class="flex-1 sm:block hidden"></div> 
+                    </div>
+                </fieldset>
+
+                <!-- Calculate Button -->
+                <div class="flex justify-center sm:justify-end">
+                    <button type="submit" id="calculateBtn"
+                            class="calculate-button w-full sm:w-auto px-8 py-3 bg-indigo-600 text-text-light font-bold text-lg rounded-full shadow-lg shadow-indigo-600/50 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500/50"
+                            aria-label="Calculate Precise Age">
+                        Calculate Age
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Results Section -->
+            <div id="results" class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-600" role="status" aria-live="polite">
+                
+                <h2 class="text-xl font-bold text-gray-800 dark:text-text-light mb-4">Your Age:</h2>
+
+                <!-- Years, Months, Days -->
+                <div id="resultYears" class="result-item text-5xl md:text-6xl italic font-extrabold text-gray-800 dark:text-text-light opacity-0" style="animation-delay: 0s;">
+                    <span class="text-indigo-600" aria-label="Years">--</span> years
+                </div>
+                <div id="resultMonths" class="result-item text-5xl md:text-6xl italic font-extrabold text-gray-800 dark:text-text-light mt-2 opacity-0" style="animation-delay: 0.1s;">
+                    <span class="text-indigo-600" aria-label="Months">--</span> months
+                </div>
+                <div id="resultDays" class="result-item text-5xl md:text-6xl italic font-extrabold text-gray-800 dark:text-text-light mt-2 opacity-0" style="animation-delay: 0.2s;">
+                    <span class="text-indigo-600" aria-label="Days">--</span> days
+                </div>
+
+                <hr class="my-4 border-gray-200 dark:border-gray-600">
+                
+                <!-- Hours, Minutes (Slightly smaller font for precision) -->
+                <div id="resultHours" class="result-item text-4xl md:text-5xl italic font-extrabold text-gray-500 dark:text-gray-400 opacity-0" style="animation-delay: 0.3s;">
+                    <span class="text-indigo-600" aria-label="Hours">--</span> hours
+                </div>
+                <div id="resultMinutes" class="result-item text-4xl md:text-5xl italic font-extrabold text-gray-500 dark:text-gray-400 mt-2 opacity-0" style="animation-delay: 0.4s;">
+                    <span class="text-indigo-600" aria-label="Minutes">--</span> minutes
+                </div>
+            </div>
+            
+            <!-- General Error Area (for future date/generic errors) -->
+            <div id="generalError" class="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg hidden" role="alert">
+                <p id="generalErrorMessage"></p>
+            </div>
+            
+            <!-- Global Time Zone Section -->
+            <section id="global-times" class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-600">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-text-light mb-4">Global Time Zones (Real-time)</h2>
+                <div id="timeZoneGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                    <!-- Time zone data injected here by JavaScript -->
+                </div>
+            </section>
+
+            <!-- Interactive Calendar Section (Target for "Website Features" link) -->
+            <section id="interactive-calendar" class="mt-10 pt-6 border-t border-gray-200 dark:border-gray-600">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-text-light mb-4">Current Month Calendar</h2>
+                
+                <!-- Calendar Navigation -->
+                <div class="flex justify-between items-center mb-4 p-2 bg-indigo-50 dark:bg-gray-800 rounded-lg">
+                    <button id="prevMonthBtn" class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Previous Month">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </button>
+                    <div id="currentMonthYear" class="text-xl font-bold text-gray-800 dark:text-text-light">Loading...</div>
+                    <button id="nextMonthBtn" class="p-2 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-gray-700 rounded-full transition" aria-label="Next Month">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Calendar Grid: Weekday Headers -->
+                <div class="grid grid-cols-7 text-center font-semibold text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    <div>Sun</div>
+                    <div>Mon</div>
+                    <div>Tue</div>
+                    <div>Wed</div>
+                    <div>Thu</div>
+                    <div>Fri</div>
+                    <div>Sat</div>
+                </div>
+                <!-- Calendar Grid: Days -->
+                <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center">
+                    <!-- Days will be inserted here by JavaScript -->
+                </div>
+            </section>
+            
+
+        </div>
+    </main>
+
+    <!-- UPDATED: FOOTER Section (Email removed) -->
+    <footer class="w-full bg-gray-800 text-gray-400 text-center py-4 px-4 mt-8">
+        <div class="max-w-4xl mx-auto flex flex-col items-center justify-center text-sm space-y-2">
+            <p>&copy; 2025 Precise Age Calculator. All rights reserved.</p>
+            <!-- Explicit email address removed as requested -->
+        </div>
+    </footer>
+
+    <!-- MODAL OVERLAY for Legal Pages (Unchanged) -->
+    <div id="legalModal" class="modal-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="modalTitle">
+        <div class="bg-white dark:bg-gray-800 text-gray-800 dark:text-text-light rounded-xl shadow-2xl p-6 md:p-8 w-11/12 max-w-3xl my-8 transform transition-all duration-300">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-200 dark:border-gray-600 pb-3">
+                <h2 id="modalTitle" class="text-2xl font-bold">Modal Title</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition focus:outline-none" aria-label="Close modal">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="modalContent" class="prose dark:prose-invert max-h-[70vh] overflow-y-auto text-sm">
+                <!-- Content injected here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- COOKIE CONSENT BANNER -->
+    <div id="cookieBanner" class="fixed bottom-0 left-0 right-0 p-4 bg-gray-900 text-white shadow-2xl z-40 transition-transform duration-500 transform translate-y-0" role="alert">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between">
+            <p class="text-sm mb-3 sm:mb-0 mr-4">
+                We use strictly necessary cookies (client-side only) to calculate your age. By using this tool, you consent to our <a href="#" onclick="openModal('Privacy Policy')" class="text-indigo-400 hover:text-indigo-300 underline">Privacy Policy</a>.
+            </p>
+            <button onclick="dismissCookieBanner()" 
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition w-full sm:w-auto flex-shrink-0">
+                Accept & Close
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Set up references to DOM elements
+        const dayInput = document.getElementById('day');
+        const monthInput = document.getElementById('month');
+        const yearInput = document.getElementById('year');
+        const hourInput = document.getElementById('hour');
+        const minuteInput = document.getElementById('minute');
+        const ampmInput = document.getElementById('ampm'); 
+        const todayDateTimeDisplay = document.getElementById('todayDateTime');
+        const timeZoneGrid = document.getElementById('timeZoneGrid');
+
+        const form = document.getElementById('ageForm');
+        
+        const resultYearsSpan = document.querySelector('#resultYears span');
+        const resultMonthsSpan = document.querySelector('#resultMonths span');
+        const resultDaysSpan = document.querySelector('#resultDays span');
+        const resultHoursSpan = document.querySelector('#resultHours span');
+        const resultMinutesSpan = document.querySelector('#resultMinutes span');
+
+        const generalErrorDiv = document.getElementById('generalError');
+        const generalErrorMessage = document.getElementById('generalErrorMessage');
+        
+        // --- Modal/Legal Page elements ---
+        const legalModal = document.getElementById('legalModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        const cookieBanner = document.getElementById('cookieBanner');
+
+        // --- Calendar elements and state ---
+        const currentMonthYearDisplay = document.getElementById('currentMonthYear');
+        const calendarDaysGrid = document.getElementById('calendarDaysGrid');
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const nextMonthBtn = document.getElementById('nextMonthBtn');
+        let currentCalendarDate = new Date(); // State for the calendar view
+
+
+        // --- Global Time Zone Data (Expanded) ---
+        const GLOBAL_TIME_ZONES = [
+            { id: 'utc', city: 'UTC', zone: 'UTC' },
+            { id: 'ny', city: 'New York, USA', zone: 'America/New_York' },
+            { id: 'sao_paulo', city: 'São Paulo, Brazil', zone: 'America/Sao_Paulo' },
+            { id: 'london', city: 'London, UK', zone: 'Europe/London' },
+            { id: 'moscow', city: 'Moscow, Russia', zone: 'Europe/Moscow' },
+            { id: 'dubai', city: 'Dubai, UAE', zone: 'Asia/Dubai' },
+            { id: 'mumbai', city: 'Mumbai, India', zone: 'Asia/Kolkata' },
+            { id: 'bangkok', city: 'Bangkok, Thailand', zone: 'Asia/Bangkok' },
+            { id: 'shanghai', city: 'Shanghai, China', zone: 'Asia/Shanghai' },
+            { id: 'tokyo', city: 'Tokyo, Japan', zone: 'Asia/Tokyo' },
+            { id: 'sydney', city: 'Sydney, Australia', zone: 'Australia/Sydney' },
+            { id: 'auckland', city: 'Auckland, NZ', zone: 'Pacific/Auckland' },
+        ];
+
+
+        // --- Legal Content Definitions (UPDATED: Terms & Conditions content) ---
+        const LEGAL_CONTENT = {
+            'Privacy Policy': {
+                title: 'Privacy Policy',
+                content: `
+                    <p class="mb-4">This policy explains what data is collected by this Age Calculator tool and how it is used.</p>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">1. Data Collection & Storage</h3>
+                    <p class="mb-4">We do not use tracking cookies, analytics, or contact forms. This tool is **client-side only**: all calculations are performed instantly on your device, and we **do not** collect, store, or transmit your birth date, time, or calculation results.</p>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">2. Third-Party Resources</h3>
+                    <p class="mb-4">This site loads styling (Tailwind CSS) and font assets (Inter). These external resource providers may collect standard, non-personally identifiable information (e.g., your IP address, browser type) necessary to serve these assets.</p>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">3. Changes to this Policy</h3>
+                    <p>We reserve the right to modify this policy. Changes will be effective immediately upon posting.</p>
+                `
+            },
+            'Terms & Conditions': {
+                title: 'Terms & Conditions',
+                content: `
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">Important Note on Output Accuracy:</h3>
+                    <p class="mb-4">
+                        <strong>Please be aware that this service operates using advanced AI models, and sometimes it may give wrong answers. For any wrong answer, we apologize.</strong> Always verify critical information provided by the service independently.
+                    </p>
+
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">1. Acceptance of Terms</h3>
+                    <p class="mb-4">By using the services provided by this application ("Service"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, you must not use the Service.</p>
+
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">2. Use of Service</h3>
+                    <p class="mb-4">The Service is provided for informational and assistance purposes only. You are responsible for all activity associated with your use of the Service. You agree not to use the Service for any unlawful or prohibited activities.</p>
+
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">3. Disclaimers</h3>
+                    <p class="mb-4">The Service is provided "as is," without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement. We do not warrant that the Service will be uninterrupted, error-free, or completely secure.</p>
+
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">4. Limitation of Liability</h3>
+                    <p class="mb-4">In no event shall the service provider be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the Service, even if the service provider has been notified orally or in writing of the possibility of such damage.</p>
+
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">5. Modifications</h3>
+                    <p>We reserve the right to revise these Terms at any time without notice. By using this Service, you are agreeing to be bound by the then-current version of these Terms and Conditions.</p>
+                `
+            },
+            'Disclaimer': {
+                title: 'Disclaimer',
+                content: `
+                    <p class="mb-4">The Precise Age Calculator is a tool designed to provide an estimation of elapsed time between two dates and times. The results provided are for **informational purposes only** and should not be relied upon for legal, financial, or formal documentation.</p>
+                    <p class="mb-4">We make no representations or warranties, express or implied, about the completeness, accuracy, reliability, suitability, or availability of the service. Your reliance on this tool is therefore strictly at your own risk.</p>
+                `
+            },
+            'Accessibility Statement': {
+                title: 'Accessibility Statement',
+                content: `
+                    <p class="mb-4">We are committed to making this website accessible and usable by all people, regardless of ability. We aim to conform to Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards.</p>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">Measures Taken</h3>
+                    <ul class="list-disc ml-6 mb-4">
+                        <li>**Contrast:** Ensuring sufficient color contrast for readability.</li>
+                        <li>**Keyboard Navigation:** Ensuring all interactive elements can be accessed and operated via keyboard.</li>
+                        <li>**Screen Reader Compatibility:** Using proper HTML semantics and ARIA attributes (like role="alert") for screen reader users.</li>
+                    </ul>
+                    <p>Despite our best efforts, if you encounter any difficulty accessing or using any part of this website, please note the issue.</p>
+                `
+            },
+            'Contact Us': {
+                title: 'Contact Us',
+                content: `
+                    <p class="mb-4">Thank you for your interest! We appreciate your feedback regarding the Precise Age Calculator.</p>
+                    <p class="mb-4">This application is running in an isolated environment, so we cannot provide a direct contact form or email address here.</p>
+                    <h3 class="text-xl font-bold mb-2 text-gray-800 dark:text-text-light">How to Submit Feedback</h3>
+                    <p>Please share any suggestions, bug reports, or feature requests directly in the chat interface where you requested this application. Your input helps us improve the tool!</p>
+                `
+            },
+        };
+
+        // Helper function to get the number of days in a given month/year (Gregorian)
+        const daysInMonth = (month, year) => new Date(year, month, 0).getDate();
+
+        /**
+         * Converts 12-hour clock (H, AMPM) to 24-hour clock (0-23).
+         */
+        function convertTo24Hour(hour, ampm) {
+            if (ampm === 'PM' && hour < 12) {
+                return hour + 12; 
+            }
+            if (ampm === 'AM' && hour === 12) {
+                return 0; // 12 AM (Midnight) -> 0
+            }
+            return hour; // 12 PM (Noon) -> 12, 1 AM -> 1
+        }
+        
+        /**
+         * Updates the "Today's Date" display in the UI every second.
+         */
+        function updateTodayDisplay() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true
+            };
+            const formattedDate = now.toLocaleDateString(undefined, options);
+            todayDateTimeDisplay.textContent = formattedDate;
+        }
+        
+        /**
+         * Initializes and updates the global time zone display.
+         */
+        function updateGlobalTimes() {
+            const now = new Date();
+            
+            // Check if the grid has been initialized. If not, build the initial structure.
+            if(timeZoneGrid.children.length === 0) {
+                 let contentHtml = '';
+                GLOBAL_TIME_ZONES.forEach(tz => {
+                    contentHtml += `
+                        <div class="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-sm">
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">${tz.city}</p>
+                            <p id="time-${tz.id}" class="text-lg font-bold text-indigo-600 dark:text-indigo-400">--:--:--</p>
+                        </div>
+                    `;
+                });
+                timeZoneGrid.innerHTML = contentHtml;
+            }
+
+            // Update time for each element individually for better performance
+            GLOBAL_TIME_ZONES.forEach(tz => {
+                const timeElement = document.getElementById(`time-${tz.id}`);
+                if (timeElement) {
+                    try {
+                         timeElement.textContent = now.toLocaleTimeString('en-US', {
+                            timeZone: tz.zone,
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                    } catch (e) {
+                        // Fallback in case the environment does not support a specific zone
+                        timeElement.textContent = 'N/A';
+                    }
+                }
+            });
+        }
+
+
+        /**
+         * Validates all inputs based on Gregorian calendar rules and checks against the CURRENT date.
+         */
+        function validateInputs(day, month, year, hour, minute, ampm) {
+            let isValid = true;
+            // Always get the current date/time right before validation
+            const today = new Date(); 
+            let currentYear = today.getFullYear();
+            
+            const clearError = (id) => {
+                const errorElement = document.getElementById(id + 'Error');
+                if(errorElement) errorElement.textContent = '';
+                const inputElement = document.getElementById(id);
+                if(inputElement) inputElement.classList.remove('error-border');
+            };
+            const displayError = (id, message) => {
+                const errorElement = document.getElementById(id + 'Error');
+                if(errorElement) errorElement.textContent = message;
+                const inputElement = document.getElementById(id);
+                if(inputElement) inputElement.classList.add('error-border');
+                isValid = false;
+            };
+
+            // Reset errors
+            generalErrorDiv.classList.add('hidden');
+            generalErrorMessage.textContent = '';
+            ['day', 'month', 'year', 'hour', 'minute', 'ampm'].forEach(clearError);
+
+            // --- 1. Year Range Validation (AD only) ---
+            if (!year || year < 1000 || year > currentYear) {
+                displayError('year', year > currentYear ? 'Must be in the past.' : 'Must be a valid AD year.');
+            }
+
+            // --- 2. Month and Day Presence/Range Validation ---
+            if (!day || day < 1 || day > 31) { 
+                displayError('day', 'Must be 1-31.');
+            }
+            if (!month || month < 1 || month > 12) {
+                displayError('month', 'Must be 1-12.');
+            }
+
+            // --- 3. Time Range Validation ---
+            if (hour === undefined || hour < 1 || hour > 12) { 
+                displayError('hour', 'Must be 1-12.');
+            }
+            if (minute === undefined || minute < 0 || minute > 59) {
+                displayError('minute', 'Must be 0-59.');
+            }
+
+            if (!isValid) return false;
+
+            // --- 4. Date Logic Validation (checking max days in month/year) ---
+            const maxDay = daysInMonth(month, year);
+            if (day > maxDay) {
+                displayError('day', `Month ${month} in ${year} has max ${maxDay} days.`);
+                return false;
+            }
+            
+            // --- 5. Future Date/Time Validation ---
+            const finalYear = year;
+            const finalMonth = month;
+            const finalDay = day;
+
+            const hour24 = convertTo24Hour(hour, ampm);
+            // Note: Date months are 0-indexed (month-1)
+            const birthDateTime = new Date(finalYear, finalMonth - 1, finalDay, hour24, minute, 0, 0);
+
+            if (birthDateTime.getTime() > today.getTime()) {
+                generalErrorMessage.textContent = `The birth date and time cannot be in the future based on today's system time.`;
+                generalErrorDiv.classList.remove('hidden');
+                dayInput.classList.add('error-border');
+                monthInput.classList.add('error-border');
+                yearInput.classList.add('error-border');
+                return false;
+            }
+
+            return true;
+        }
+
+
+        /**
+         * Calculates the precise age in years, months, days, hours, and minutes.
+         */
+        function calculateAge(birthDate, today) {
+            let ageYears = today.getFullYear() - birthDate.getFullYear();
+            let ageMonths = today.getMonth() - birthDate.getMonth();
+            let ageDays = today.getDate() - birthDate.getDate();
+            let ageHours = today.getHours() - birthDate.getHours();
+            let ageMinutes = today.getMinutes() - birthDate.getMinutes();
+
+            // Borrowing logic remains critical for accuracy
+            
+            if (ageMinutes < 0) { ageHours--; ageMinutes += 60; }
+            if (ageHours < 0) { ageDays--; ageHours += 24; }
+            
+            if (ageDays < 0) {
+                ageMonths--;
+                const todayMonth = today.getMonth();
+                const todayYear = today.getFullYear();
+                // Determine the number of days in the month PRECEDING the current month
+                const yearOfPrevMonth = (todayMonth === 0) ? todayYear - 1 : todayYear;
+                const monthOfPrevMonth = (todayMonth === 0) ? 12 : todayMonth; 
+                const daysInPrevMonth = daysInMonth(monthOfPrevMonth, yearOfPrevMonth);
+                ageDays += daysInPrevMonth;
+            }
+
+            if (ageMonths < 0) { ageYears--; ageMonths += 12; }
+
+            if (ageYears < 0) {
+                 return { years: 0, months: 0, days: 0, hours: 0, minutes: 0 };
+            }
+
+            return {
+                years: ageYears,
+                months: ageMonths,
+                days: ageDays,
+                hours: ageHours,
+                minutes: ageMinutes
+            };
+        }
+
+        /**
+         * Updates the results display in the DOM.
+         */
+        function updateResults(age) {
+            resultYearsSpan.textContent = age.years;
+            resultMonthsSpan.textContent = age.months;
+            resultDaysSpan.textContent = age.days;
+            resultHoursSpan.textContent = age.hours;
+            resultMinutesSpan.textContent = age.minutes;
+
+            document.querySelectorAll('.result-item').forEach(el => {
+                el.classList.add('opacity-100');
+                el.style.animationName = 'slideInUp';
+                el.style.animationFillMode = 'forwards';
+            });
+        }
+        
+        /**
+         * Renders the calendar grid for the month contained in the given date.
+         */
+        function renderCalendar(date) {
+            const year = date.getFullYear();
+            const month = date.getMonth(); // 0-indexed month
+            const today = new Date();
+
+            // 1. Update Header
+            const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+            currentMonthYearDisplay.textContent = `${monthName} ${year}`;
+            calendarDaysGrid.innerHTML = ''; // Clear previous days
+
+            // 2. Determine first day and last day of the month
+            // Date object for the 1st day of the month
+            const firstDayOfMonth = new Date(year, month, 1); 
+            // Get the day index (0=Sunday, 6=Saturday) of the first day
+            const startingDayOfWeek = firstDayOfMonth.getDay(); 
+            // Get the total number of days in the month
+            const daysInMonthCount = new Date(year, month + 1, 0).getDate(); 
+            
+            // 3. Render previous month's filler days (Blanks)
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const blankDay = document.createElement('div');
+                blankDay.className = 'p-2 text-gray-500/30';
+                calendarDaysGrid.appendChild(blankDay);
+            }
+
+            // 4. Render current month's days
+            for (let day = 1; day <= daysInMonthCount; day++) {
+                const dayDiv = document.createElement('div');
+                const isCurrentDay = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+                dayDiv.textContent = day;
+                dayDiv.className = `p-2 rounded-lg font-medium transition cursor-pointer text-sm
+                                    ${isCurrentDay 
+                                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/50 hover:bg-indigo-500' 
+                                        : 'text-gray-800 dark:text-text-light hover:bg-gray-200 dark:hover:bg-gray-600'
+                                    }`;
+                
+                // Add a click handler (optional but good practice)
+                dayDiv.addEventListener('click', () => {
+                    // console.log(`Selected: ${year}-${month + 1}-${day}`);
+                    dayInput.value = day;
+                    monthInput.value = month + 1;
+                    yearInput.value = year;
+                    // Visually confirm selection (optional: run calculation)
+                    document.getElementById('calculateBtn').focus();
+                });
+
+                calendarDaysGrid.appendChild(dayDiv);
+            }
+        }
+
+        // --- Navigation Functions ---
+        function scrollToTop(event) {
+            event.preventDefault();
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function scrollToFeatures(event) {
+            event.preventDefault();
+            const featuresSection = document.getElementById('interactive-calendar');
+            if (featuresSection) {
+                 window.scrollTo({
+                    top: featuresSection.offsetTop - 64, // Subtract header height
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+
+        // --- Modal/Legal Functions ---
+        function openModal(page) {
+            const content = LEGAL_CONTENT[page];
+            if (content) {
+                modalTitle.textContent = content.title;
+                modalContent.innerHTML = content.content;
+                legalModal.classList.remove('hidden');
+                legalModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            }
+            // Block navigation
+            return false;
+        }
+
+        function closeModal() {
+            legalModal.classList.add('hidden');
+            legalModal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        // --- Cookie Banner Functions ---
+        let cookieConsentDismissed = false; // State to track dismissal in this session
+        
+        function dismissCookieBanner() {
+            cookieConsentDismissed = true;
+            cookieBanner.classList.add('translate-y-full'); // Slide out animation
+            // Hide after animation
+            setTimeout(() => {
+                cookieBanner.classList.add('hidden');
+            }, 500); 
+        }
+
+        // --- Event Listeners and Main Handler ---
+
+        form.addEventListener('submit', handleCalculation);
+        
+        function handleCalculation(event) {
+            event.preventDefault();
+
+            // Parse date inputs
+            const day = parseInt(dayInput.value, 10);
+            const month = parseInt(monthInput.value, 10);
+            const year = parseInt(yearInput.value, 10);
+            
+            // Parse time inputs (default hour is 12, default minute is 0)
+            const hour = parseInt(hourInput.value || 12, 10); 
+            const minute = parseInt(minuteInput.value || 0, 10);
+            const ampm = ampmInput.value;
+            
+            // Clear previous results visually
+            document.querySelectorAll('.result-item').forEach(el => el.classList.remove('opacity-100'));
+
+            // 1. Validation 
+            if (!validateInputs(day, month, year, hour, minute, ampm)) {
+                return;
+            }
+            
+            // 2. Determine final AD date/time
+            const finalYear = year;
+            const finalMonth = month;
+            const finalDay = day;
+
+            const hour24 = convertTo24Hour(hour, ampm);
+            const birthDate = new Date(finalYear, finalMonth - 1, finalDay, hour24, minute, 0, 0);
+
+            // 3. Get the *current* date and time for comparison
+            const today = new Date();
+
+            // 4. Calculate age and update results
+            const age = calculateAge(birthDate, today);
+            updateResults(age);
+        }
+
+        // Event Listeners for calendar navigation
+        prevMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1, 1);
+            renderCalendar(currentCalendarDate);
+        });
+
+        nextMonthBtn.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1, 1);
+            renderCalendar(currentCalendarDate);
+        });
+
+
+        // Run setup functions on load
+        window.onload = () => {
+             // Set AD defaults (Today's date)
+             const now = new Date();
+             dayInput.value = now.getDate();
+             monthInput.value = now.getMonth() + 1; 
+             yearInput.value = now.getFullYear();
+             hourInput.value = '12';
+             minuteInput.value = '00';
+
+             updateTodayDisplay(); // Initial display of current date/time
+             updateGlobalTimes(); // Initial display of global times
+             renderCalendar(currentCalendarDate); // Initial calendar display
+
+             // Set an interval to update the time displays every second
+             setInterval(() => {
+                updateTodayDisplay();
+                updateGlobalTimes();
+             }, 1000);
+        }
+
+        // Add visual feedback on error clearing when typing
+        [dayInput, monthInput, yearInput, hourInput, minuteInput, ampmInput].forEach(input => {
+            input.addEventListener('input', (e) => {
+                const id = e.target.id;
+                document.getElementById(id + 'Error').textContent = '';
+                e.target.classList.remove('error-border');
+
+                if (!generalErrorDiv.classList.contains('hidden')) {
+                     generalErrorDiv.classList.add('hidden');
+                     ['day', 'month', 'year', 'hour', 'minute', 'ampm'].forEach(fieldId => {
+                         document.getElementById(fieldId)?.classList.remove('error-border');
+                     });
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
